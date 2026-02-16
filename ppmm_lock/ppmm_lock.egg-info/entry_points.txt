@@ -1,0 +1,2 @@
+[console_scripts]
+ppmm-lock = ppmm_lock.cli:main
