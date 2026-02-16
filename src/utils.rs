@@ -1,9 +1,9 @@
 use colored::*;
-use std::{
-    io::{self, Write},
+    io::{self, Write, IsTerminal},
     path::Path,
     process::Command,
 };
+
 
 // Constants
 const PROJECT_CONFIG_FILE: &str = "project.toml";
@@ -114,6 +114,12 @@ pub fn setup_venv(venv_path: String) -> Result<(), String> {
 }
 
 pub fn ask_if_create_venv() -> bool {
+    // Check if stdin is a terminal
+    if !std::io::stdin().is_terminal() {
+        wprint("Non-interactive environment detected. Defaulting to 'yes' for venv creation.".to_string());
+        return true;
+    }
+
     let mut answer = String::new();
     print!(
         "{}",
@@ -121,11 +127,22 @@ pub fn ask_if_create_venv() -> bool {
             .green()
             .bold()
     );
-    io::stdout().flush().unwrap();
-    io::stdin().read_line(&mut answer).unwrap();
+    
+    // Handle potential flush error safely
+    if let Err(e) = io::stdout().flush() {
+        eprint(format!("Failed to flush stdout: {}", e));
+        return false; // Default safe behavior
+    }
+
+    // Handle read_line error safely
+    if let Err(e) = io::stdin().read_line(&mut answer) {
+        eprint(format!("Failed to read line: {}", e));
+        return false;
+    }
+
     match answer.trim().to_lowercase().as_str() {
-        "y" => true,
-        "n" => false,
+        "y" | "yes" => true,
+        "n" | "no" => false,
         _ => {
             println!("Invalid option");
             ask_if_create_venv()
