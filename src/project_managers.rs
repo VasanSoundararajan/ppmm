@@ -246,7 +246,12 @@ impl AddPackage {
 
                     conf.packages.insert(vname.clone(), version);
                     match conf.write_to_file(config_file) {
-                        Ok(_) => iprint(format!("Package '{}' added successfully", &vname)),
+                        Ok(_) => {
+                            iprint(format!("Package '{}' added successfully", &vname));
+                            if let Err(e) = generate_lock_file(venv_root) {
+                                eprint(format!("Failed to generate lock file: {}", e));
+                            }
+                        }
                         Err(e) => {
                             eprint(e.to_string());
                             continue;
@@ -319,7 +324,12 @@ impl RemovePackage {
                 Ok(_) => {
                     conf.packages.remove(pkg_name);
                     match conf.write_to_file(config_file) {
-                        Ok(_) => iprint(format!("Package '{}' removed successfully", pkg_name)),
+                        Ok(_) => {
+                            iprint(format!("Package '{}' removed successfully", pkg_name));
+                            if let Err(e) = generate_lock_file(&venv_root) {
+                                eprint(format!("Failed to generate lock file: {}", e));
+                            }
+                        }
                         Err(e) => {
                             eprint(e.to_string());
                             continue;
@@ -484,6 +494,10 @@ impl Installer {
                 }
             }
         }
+
+        if let Err(e) = generate_lock_file(&venv_root) {
+            eprint(format!("Failed to generate lock file: {}", e));
+        }
     }
 
     pub fn install_packages(&self) {
@@ -526,12 +540,44 @@ impl Installer {
             }
         }
 
+        if Path::new("ppmm.lock").exists() {
+            iprint("Found ppmm.lock, installing from lock file...".to_string());
+            let output = Command::new(get_venv_pip_path(venv_root))
+                .arg("install")
+                .arg("-r")
+                .arg("ppmm.lock")
+                .output();
+
+            match output {
+                Ok(out) => {
+                    if !out.status.success() {
+                        eprint(format!(
+                            "Failed to install from lock file: {}",
+                            String::from_utf8_lossy(&out.stderr)
+                        ));
+                    } else {
+                        println!("{}", String::from_utf8_lossy(&out.stdout));
+                        iprint("Installed from ppmm.lock successfully".to_string());
+                        return;
+                    }
+                }
+                Err(e) => {
+                    eprint(format!("Failed to execute pip: {}", e));
+                    return;
+                }
+            }
+        }
+
         for (name, version) in conf.packages.iter() {
             let package_spec = format!("{}=={}", name, version);
             match install_package(&package_spec, venv_root) {
                 Ok(_) => iprint(format!("Package '{}' installed", name)),
                 Err(e) => eprint(format!("Failed to install '{}': {}", name, e)),
             }
+        }
+
+        if let Err(e) = generate_lock_file(venv_root) {
+            eprint(format!("Failed to generate lock file: {}", e));
         }
     }
 }

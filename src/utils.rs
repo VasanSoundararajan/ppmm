@@ -179,6 +179,34 @@ pub fn install_package(pkg: &str, venv_root: &str) -> Result<(), String> {
     Ok(())
 }
 
+pub fn generate_lock_file(venv_root: &str) -> Result<(), String> {
+    if !check_venv_dir_exists(venv_root) {
+        return Err("Virtual Environment Not Found".to_string());
+    }
+
+    iprint("Generating ppmm.lock...".to_string());
+    let output = Command::new(get_venv_pip_path(venv_root))
+        .arg("freeze")
+        .output()
+        .map_err(|e| format!("Failed to execute pip freeze: {}", e))?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "Failed to generate lock file: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+
+    let lock_content = String::from_utf8_lossy(&output.stdout);
+    let mut file = std::fs::File::create("ppmm.lock")
+        .map_err(|e| format!("Failed to create ppmm.lock: {}", e))?;
+    
+    file.write_all(lock_content.as_bytes())
+        .map_err(|e| format!("Failed to write to ppmm.lock: {}", e))?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
