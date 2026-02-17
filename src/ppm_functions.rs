@@ -251,6 +251,10 @@ pub fn update_packages() {
             failed_packages.join(", ")
         ));
     }
+
+    if let Err(e) = generate_lock_file(&venv_root) {
+        eprint(format!("Failed to generate lock file: {}", e));
+    }
 }
 
 pub fn list_packages() {

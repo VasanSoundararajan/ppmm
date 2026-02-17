@@ -38,6 +38,8 @@ A fast, efficient command-line tool to create, manage, and deploy Python project
 - 🏷️ **Version Control** - Automatic semantic version bumping (major, minor, patch)
 - ✅ **Cross-Platform** - Works seamlessly on Windows, macOS, and Linux
 - ⚡ **Performance** - Optimized Rust implementation with zero runtime dependencies
+- 🔒 **Lock File Support** - Automatic `ppmm.lock` generation for reproducible builds
+
 
 ## Quick Start
 
@@ -589,11 +591,11 @@ cargo watch -x build
 - Package name validation
 - Improved error messages
 - Cross-platform path handling
+- Lock file support (`ppmm.lock`)
 
 ### 🚀 Planned Features
 
 - Dependency resolution
-- Lock file support (like Cargo.lock)
 - Dev dependencies separation
 - Python version management
 - Project templates
