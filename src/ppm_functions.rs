@@ -167,7 +167,7 @@ pub fn start_project() {
     }
 }
 
-pub fn update_packages() {
+pub fn update_packages(pkg_names: &Vec<String>) {
     let config_file = get_project_config_file();
     if !Path::new(config_file).exists() {
         eprint(format!("Could not find {}", config_file));
@@ -205,8 +205,32 @@ pub fn update_packages() {
     let mut updates: Vec<(String, String)> = vec![];
     let mut failed_packages: Vec<String> = vec![];
 
-    for (name, _) in conf.packages.iter() {
-        match get_pkg_version(name) {
+    // Filter packages if specific ones are requested
+    let packages_to_check: Vec<String> = if pkg_names.is_empty() {
+        conf.packages.keys().cloned().collect()
+    } else {
+        let mut valid_names = vec![];
+        for name in pkg_names {
+            if conf.packages.contains_key(name) {
+                valid_names.push(name.clone());
+            } else {
+                wprint(format!("Package '{}' not found in project.toml", name));
+            }
+        }
+        valid_names
+    };
+
+    if packages_to_check.is_empty() {
+        if !pkg_names.is_empty() {
+             eprint("No valid packages specified to update".to_owned());
+        } else {
+             eprint("No packages to update".to_owned());
+        }
+        return;
+    }
+
+    for name in packages_to_check {
+        match get_pkg_version(&name) {
             Ok(latest_ver) => updates.push((name.clone(), latest_ver)),
             Err(e) => {
                 eprint(format!("Could not find latest version of {}: {}", name, e));

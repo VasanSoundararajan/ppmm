@@ -34,7 +34,7 @@ pub enum Action {
     /// Show the project.toml file
     Info,
     /// Update all packages
-    Update,
+    Update(UpdatePackage),
     /// Build the project
     Build(BuildProject),
     /// Bump project version (major, minor, patch)
@@ -702,6 +702,18 @@ impl BumpVersion {
                 eprint(format!("Failed to update project.toml: {}", e));
             }
         }
+    }
+}
+
+#[derive(Args, Debug)]
+pub struct UpdatePackage {
+    /// List of packages to update
+    pub pkg_names: Vec<String>,
+}
+
+impl UpdatePackage {
+    pub fn update_package(&self) {
+        crate::ppm_functions::update_packages(&self.pkg_names);
     }
 }
 

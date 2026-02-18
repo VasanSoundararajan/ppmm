@@ -33,7 +33,7 @@ fn main() {
         Action::Info => ppm_functions::show_project_info(),
         Action::Gen => ppm_functions::gen_requirements(),
         Action::Start => ppm_functions::start_project(),
-        Action::Update => ppm_functions::update_packages(),
+        Action::Update(update) => update.update_package(),
         Action::List => ppm_functions::list_packages(),
     }
 }
