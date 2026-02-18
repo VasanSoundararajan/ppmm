@@ -222,17 +222,20 @@ pub fn update_packages() {
 
     let mut updated_packages: Vec<(String, String)> = vec![];
 
-    for (name, ver) in updates {
-        let package_spec = format!("{}=={}", name, ver);
-        match install_package(&package_spec, &venv_root) {
-            Ok(_) => {
-                updated_packages.push((name.clone(), ver));
+    let mut packages_to_install: Vec<String> = vec![];
+    for (name, ver) in updates.iter() {
+        packages_to_install.push(format!("{}=={}", name, ver));
+    }
+
+    match install_packages_batch(&packages_to_install, &venv_root) {
+        Ok(_) => {
+            for (name, ver) in updates {
+                updated_packages.push((name.clone(), ver.clone()));
                 iprint(format!("Updated {}", name));
             }
-            Err(e) => {
-                eprint(format!("Failed to update '{}': {}", name, e));
-                failed_packages.push(name);
-            }
+        }
+        Err(e) => {
+            eprint(format!("Failed to update packages: {}", e));
         }
     }
 

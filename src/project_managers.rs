@@ -228,11 +228,15 @@ impl AddPackage {
 
         let venv_root = conf.project.venv.as_deref().unwrap_or("venv");
 
-        for pkg_name in self.pkg_names.iter() {
-            let (vname, ver) = parse_version(pkg_name);
+        if self.pkg_names.is_empty() {
+            wprint("No packages specified".to_string());
+            return;
+        }
 
-            match install_package(pkg_name, venv_root) {
-                Ok(_) => {
+        match install_packages_batch(&self.pkg_names, venv_root) {
+            Ok(_) => {
+                for pkg_name in self.pkg_names.iter() {
+                    let (vname, ver) = parse_version(pkg_name);
                     let version = match ver {
                         Some(v) => v,
                         None => match get_pkg_version(&vname) {
@@ -245,22 +249,22 @@ impl AddPackage {
                     };
 
                     conf.packages.insert(vname.clone(), version);
-                    match conf.write_to_file(config_file) {
-                        Ok(_) => {
-                            iprint(format!("Package '{}' added successfully", &vname));
-                            if let Err(e) = generate_lock_file(venv_root) {
-                                eprint(format!("Failed to generate lock file: {}", e));
-                            }
-                        }
-                        Err(e) => {
-                            eprint(e.to_string());
-                            continue;
+                    iprint(format!("Package '{}' added successfully", &vname));
+                }
+
+                match conf.write_to_file(config_file) {
+                    Ok(_) => {
+                        if let Err(e) = generate_lock_file(venv_root) {
+                            eprint(format!("Failed to generate lock file: {}", e));
                         }
                     }
+                    Err(e) => {
+                        eprint(e.to_string());
+                    }
                 }
-                Err(e) => {
-                    eprint(format!("Package '{}' failed to install: {}", &vname, e));
-                }
+            }
+            Err(e) => {
+                eprint(e);
             }
         }
     }
@@ -464,11 +468,12 @@ impl Installer {
             return;
         }
 
-        for pkg_name in pkg_names.iter() {
-            let (vname, ver) = parse_version(pkg_name);
+        let pkg_names_string: Vec<String> = pkg_names.iter().map(|&s| s.to_string()).collect();
 
-            match install_package(pkg_name, &venv_root) {
-                Ok(_) => {
+        match install_packages_batch(&pkg_names_string, &venv_root) {
+            Ok(_) => {
+                for pkg_name in pkg_names {
+                    let (vname, ver) = parse_version(pkg_name);
                     let version = match ver {
                         Some(v) => v,
                         None => match get_pkg_version(&vname) {
@@ -481,17 +486,16 @@ impl Installer {
                     };
 
                     conf.packages.insert(vname.clone(), version);
-                    match conf.write_to_file(config_file) {
-                        Ok(_) => iprint(format!("Package '{}' installed successfully", &vname)),
-                        Err(e) => {
-                            eprint(e.to_string());
-                            continue;
-                        }
-                    }
+                    iprint(format!("Package '{}' installed successfully", &vname));
                 }
-                Err(e) => {
-                    eprint(format!("Package '{}' failed to install: {}", &vname, e));
+                
+                match conf.write_to_file(config_file) {
+                    Ok(_) => {},
+                    Err(e) => eprint(e.to_string()),
                 }
+            }
+            Err(e) => {
+                eprint(e);
             }
         }
 
@@ -568,12 +572,18 @@ impl Installer {
             }
         }
 
+        let mut packages_to_install: Vec<String> = vec![];
         for (name, version) in conf.packages.iter() {
-            let package_spec = format!("{}=={}", name, version);
-            match install_package(&package_spec, venv_root) {
-                Ok(_) => iprint(format!("Package '{}' installed", name)),
-                Err(e) => eprint(format!("Failed to install '{}': {}", name, e)),
+            packages_to_install.push(format!("{}=={}", name, version));
+        }
+
+        match install_packages_batch(&packages_to_install, venv_root) {
+            Ok(_) => {
+                for (name, _) in conf.packages.iter() {
+                     iprint(format!("Package '{}' installed", name));
+                }
             }
+            Err(e) => eprint(format!("Failed to install packages: {}", e)),
         }
 
         if let Err(e) = generate_lock_file(venv_root) {
