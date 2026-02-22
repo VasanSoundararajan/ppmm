@@ -1,4 +1,4 @@
-use colored::*;
+use std::{
     io::{self, Write, IsTerminal},
     path::Path,
     process::Command,
@@ -120,32 +120,33 @@ pub fn ask_if_create_venv() -> bool {
         return true;
     }
 
-    let mut answer = String::new();
-    print!(
-        "{}",
-        "[?] Do you want to create a virtual environment? (y/n): "
-            .green()
-            .bold()
-    );
-    
-    // Handle potential flush error safely
-    if let Err(e) = io::stdout().flush() {
-        eprint(format!("Failed to flush stdout: {}", e));
-        return false; // Default safe behavior
-    }
+    loop {
+        let mut answer = String::new();
+        print!(
+            "{}",
+            "[?] Do you want to create a virtual environment? (y/n): "
+                .green()
+                .bold()
+        );
+        
+        // Handle potential flush error safely
+        if let Err(e) = io::stdout().flush() {
+            eprint(format!("Failed to flush stdout: {}", e));
+            return false; // Default safe behavior
+        }
 
-    // Handle read_line error safely
-    if let Err(e) = io::stdin().read_line(&mut answer) {
-        eprint(format!("Failed to read line: {}", e));
-        return false;
-    }
+        // Handle read_line error safely
+        if let Err(e) = io::stdin().read_line(&mut answer) {
+            eprint(format!("Failed to read line: {}", e));
+            return false;
+        }
 
-    match answer.trim().to_lowercase().as_str() {
-        "y" | "yes" => true,
-        "n" | "no" => false,
-        _ => {
-            println!("Invalid option");
-            ask_if_create_venv()
+        match answer.trim().to_lowercase().as_str() {
+            "y" | "yes" => return true,
+            "n" | "no" => return false,
+            _ => {
+                println!("{}", "Invalid option, please type 'y' or 'n'".bright_red());
+            }
         }
     }
 }

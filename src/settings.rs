@@ -50,7 +50,8 @@ impl Config {
     }
 
     pub fn write_to_file(&self, path: &str) -> Result<(), Error> {
-        let toml_string = toml::to_string(&self).unwrap();
+        let toml_string = toml::to_string(&self)
+            .map_err(|e| Error::new(std::io::ErrorKind::InvalidData, e))?;
         fs::write(path, toml_string)
     }
 
