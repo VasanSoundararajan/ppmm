@@ -33,7 +33,7 @@ pub enum Action {
     Gen,
     /// Show the project.toml file
     Info,
-    /// Update all packages
+    /// Update all or specific packages to their latest versions
     Update(UpdatePackage),
     /// Build the project
     Build(BuildProject),
@@ -713,7 +713,7 @@ pub struct UpdatePackage {
 
 impl UpdatePackage {
     pub fn update_package(&self) {
-        crate::ppm_functions::update_packages(&self.pkg_names);
+        crate::ppm_functions::update_packages(self.pkg_names.as_slice());
     }
 }
 

@@ -167,7 +167,7 @@ pub fn start_project() {
     }
 }
 
-pub fn update_packages(pkg_names: &Vec<String>) {
+pub fn update_packages(pkg_names: &[String]) {
     let config_file = get_project_config_file();
     if !Path::new(config_file).exists() {
         eprint(format!("Could not find {}", config_file));
